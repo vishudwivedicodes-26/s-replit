@@ -6,7 +6,7 @@ import { Card, Button, Modal } from "@/components/ui";
 import { useSalon } from "@/hooks/use-salons";
 import { isAuthorizedForSalon, clearSalonAuth } from "@/hooks/use-salons";
 import { useBookings, useUpdateBookingStatus } from "@/hooks/use-bookings";
-import { QRCodeSVG } from "react-qr-code";
+import QRCode from "react-qr-code";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -118,7 +118,7 @@ export default function OwnerDashboard() {
         onClick={() => setIsQrOpen(true)}
       >
         <div className="bg-white p-2 rounded-xl shadow-sm shrink-0">
-          <QRCodeSVG value={bookingUrl} size={64} />
+          <QRCode value={bookingUrl} size={64} />
         </div>
         <div>
           <h3 className="font-semibold text-foreground mb-1 flex items-center gap-2">
@@ -243,7 +243,7 @@ export default function OwnerDashboard() {
       <Modal isOpen={isQrOpen} onClose={() => setIsQrOpen(false)} title="Apna Booking QR Code">
         <div className="flex flex-col items-center gap-6 py-4">
           <div className="bg-white p-6 rounded-2xl shadow-lg border border-border">
-            <QRCodeSVG value={bookingUrl} size={220} />
+            <QRCode value={bookingUrl} size={220} />
           </div>
 
           <div className="text-center">
