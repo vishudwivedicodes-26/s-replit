@@ -1,242 +1,313 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Layout } from "@/components/Layout";
-import { Card, Button, Modal, Input, Label } from "@/components/ui";
+import { Button, Input, Label } from "@/components/ui";
 import { useSalons, useCreateSalon, useSalonLogin, setSalonAuth } from "@/hooks/use-salons";
-import { Store, Plus, ArrowRight, Lock, Eye, EyeOff } from "lucide-react";
+import { LogIn, UserPlus, Lock, Eye, EyeOff, Store, ChevronRight, Search } from "lucide-react";
+
+type Tab = "login" | "register";
 
 export default function OwnerLogin() {
   const [, navigate] = useLocation();
-  const { data: salons, isLoading } = useSalons();
-  const createSalon = useCreateSalon();
-  const salonLogin = useSalonLogin();
+  const [tab, setTab] = useState<Tab>("login");
 
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [pinModalSalon, setPinModalSalon] = useState<{ id: number; name: string } | null>(null);
-  const [pin, setPin] = useState("");
-  const [showPin, setShowPin] = useState(false);
+  // Login state
+  const { data: allSalons } = useSalons();
+  const salonLogin = useSalonLogin();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSalon, setSelectedSalon] = useState<{ id: number; name: string } | null>(null);
+  const [loginPin, setLoginPin] = useState("");
+  const [showLoginPin, setShowLoginPin] = useState(false);
   const [loginError, setLoginError] = useState("");
+
+  // Register state
+  const createSalon = useCreateSalon();
   const [registerPin, setRegisterPin] = useState("");
   const [showRegisterPin, setShowRegisterPin] = useState(false);
+  const [registerError, setRegisterError] = useState("");
 
-  const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
+  const filteredSalons = allSalons?.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.phone.includes(searchQuery)
+  ) ?? [];
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const pinVal = fd.get("pin") as string;
-    if (pinVal.length !== 4 || !/^\d{4}$/.test(pinVal)) {
+    if (!selectedSalon) return;
+    setLoginError("");
+    salonLogin.mutate(
+      { data: { salonId: selectedSalon.id, pin: loginPin } },
+      {
+        onSuccess: (salon) => {
+          setSalonAuth({ salonId: salon.id, salonName: salon.name });
+          navigate(`/owner/${salon.id}`);
+        },
+        onError: () => {
+          setLoginError("Galat PIN hai. Dobara try karein.");
+          setLoginPin("");
+        },
+      }
+    );
+  };
+
+  const handleRegisterSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (registerPin.length !== 4) {
+      setRegisterError("PIN exactly 4 numbers ka hona chahiye.");
       return;
     }
-    createSalon.mutate({
-      data: {
-        name: fd.get("name") as string,
-        ownerName: fd.get("ownerName") as string,
-        phone: fd.get("phone") as string,
-        address: fd.get("address") as string,
-        openTime: fd.get("openTime") as string,
-        closeTime: fd.get("closeTime") as string,
-        pin: pinVal,
-      }
-    }, {
-      onSuccess: (salon) => {
-        setIsRegisterOpen(false);
-        setRegisterPin("");
-        setSalonAuth({ salonId: salon.id, salonName: salon.name });
-        navigate(`/owner/${salon.id}`);
-      }
-    });
-  };
-
-  const openPinModal = (salon: { id: number; name: string }) => {
-    setPinModalSalon(salon);
-    setPin("");
-    setLoginError("");
-  };
-
-  const handlePinLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pinModalSalon) return;
-    setLoginError("");
-    salonLogin.mutate({
-      data: { salonId: pinModalSalon.id, pin }
-    }, {
-      onSuccess: (salon) => {
-        setSalonAuth({ salonId: salon.id, salonName: salon.name });
-        setPinModalSalon(null);
-        navigate(`/owner/${salon.id}`);
+    setRegisterError("");
+    const fd = new FormData(e.currentTarget);
+    createSalon.mutate(
+      {
+        data: {
+          name: fd.get("name") as string,
+          ownerName: fd.get("ownerName") as string,
+          phone: fd.get("phone") as string,
+          address: fd.get("address") as string,
+          openTime: fd.get("openTime") as string,
+          closeTime: fd.get("closeTime") as string,
+          pin: registerPin,
+        },
       },
-      onError: () => {
-        setLoginError("Galat PIN hai. Dobara try karein.");
+      {
+        onSuccess: (salon) => {
+          setSalonAuth({ salonId: salon.id, salonName: salon.name });
+          navigate(`/owner/${salon.id}`);
+        },
       }
-    });
+    );
   };
 
   return (
     <Layout title="Owner Portal" backLink="/">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
-          <div>
-            <h1 className="font-display text-4xl font-bold text-foreground mb-2">Owner Portal</h1>
-            <p className="text-muted-foreground text-lg font-light">Apna salon chunein aur PIN se login karein.</p>
+      <div className="max-w-lg mx-auto">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-5">
+            <Store className="w-8 h-8" />
           </div>
-          <Button onClick={() => setIsRegisterOpen(true)} className="shrink-0 gap-2">
-            <Plus className="w-5 h-5" /> Naya Salon Register Karein
-          </Button>
+          <h1 className="font-display text-4xl font-bold text-foreground mb-3">Owner Portal</h1>
+          <p className="text-muted-foreground text-lg">
+            Apne salon ka dashboard kholein ya naya salon register karein.
+          </p>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {[1, 2, 3].map(i => <div key={i} className="h-40 bg-muted animate-pulse rounded-2xl" />)}
-          </div>
-        ) : salons?.length === 0 ? (
-          <div className="text-center py-20 bg-card rounded-2xl border border-border border-dashed">
-            <Store className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">Koi salon nahi mila</h3>
-            <p className="text-muted-foreground mb-6">Apna pehla salon register karein.</p>
-            <Button onClick={() => setIsRegisterOpen(true)} variant="outline">Salon Banayein</Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {salons?.map(salon => (
-              <div
-                key={salon.id}
-                onClick={() => openPinModal({ id: salon.id, name: salon.name })}
-                className="cursor-pointer"
-              >
-                <Card className="group hover:border-primary/40 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 h-full flex flex-col justify-between">
-                  <div className="p-8">
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                        <Store className="w-6 h-6" />
+        {/* Tab switcher */}
+        <div className="flex bg-muted rounded-2xl p-1.5 mb-8">
+          <button
+            onClick={() => { setTab("login"); setLoginError(""); setSelectedSalon(null); setLoginPin(""); setSearchQuery(""); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
+              tab === "login"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LogIn className="w-4 h-4" />
+            Login Karein
+          </button>
+          <button
+            onClick={() => { setTab("register"); setRegisterError(""); setRegisterPin(""); }}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 ${
+              tab === "register"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <UserPlus className="w-4 h-4" />
+            Register Karein
+          </button>
+        </div>
+
+        {/* ── LOGIN TAB ── */}
+        {tab === "login" && (
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <h2 className="font-display text-xl font-bold mb-1">Apna Salon Dhundein</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              Salon ka naam ya phone number likhein, phir apna PIN daalen.
+            </p>
+
+            {!selectedSalon ? (
+              <div className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Salon ka naam ya phone number..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    autoFocus
+                  />
+                </div>
+
+                {searchQuery.length > 0 && (
+                  <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+                    {filteredSalons.length === 0 ? (
+                      <div className="p-4 text-center text-muted-foreground text-sm">
+                        Koi salon nahi mila. Pehle register karein.
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-                        <Lock className="w-3 h-3" /> PIN se login
-                      </div>
-                    </div>
-                    <h2 className="font-display text-2xl font-bold mb-2">{salon.name}</h2>
-                    <p className="text-muted-foreground line-clamp-1">{salon.address}</p>
-                    <p className="text-sm text-primary mt-4 font-medium flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      Login Karein <ArrowRight className="w-4 h-4" />
-                    </p>
+                    ) : (
+                      filteredSalons.map(salon => (
+                        <button
+                          key={salon.id}
+                          onClick={() => { setSelectedSalon({ id: salon.id, name: salon.name }); setSearchQuery(""); }}
+                          className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/60 transition-colors text-left group"
+                        >
+                          <div>
+                            <p className="font-semibold text-foreground">{salon.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{salon.address}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </button>
+                      ))
+                    )}
                   </div>
-                </Card>
+                )}
               </div>
-            ))}
+            ) : (
+              <form onSubmit={handleLoginSubmit} className="space-y-5">
+                {/* Selected salon display */}
+                <div className="flex items-center justify-between p-3.5 bg-primary/5 border border-primary/20 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Store className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{selectedSalon.name}</p>
+                      <p className="text-xs text-muted-foreground">Selected</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedSalon(null); setLoginPin(""); setLoginError(""); }}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Badlein
+                  </button>
+                </div>
+
+                <div>
+                  <Label>4-Digit PIN</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      type={showLoginPin ? "text" : "password"}
+                      value={loginPin}
+                      onChange={e => {
+                        setLoginPin(e.target.value.replace(/\D/g, "").slice(0, 4));
+                        setLoginError("");
+                      }}
+                      placeholder="••••"
+                      className="pl-10 pr-10 text-center text-2xl tracking-widest font-bold"
+                      maxLength={4}
+                      autoFocus
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPin(v => !v)}
+                      className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground"
+                    >
+                      {showLoginPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {loginError && (
+                    <p className="text-destructive text-sm mt-2">⚠️ {loginError}</p>
+                  )}
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full gap-2"
+                  disabled={loginPin.length !== 4 || salonLogin.isPending}
+                >
+                  <LogIn className="w-4 h-4" />
+                  {salonLogin.isPending ? "Login ho raha hai..." : "Dashboard Kholein"}
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* ── REGISTER TAB ── */}
+        {tab === "register" && (
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <h2 className="font-display text-xl font-bold mb-1">Naya Salon Register Karein</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              Apna salon ka detail bharein aur ek 4-digit PIN set karein.
+            </p>
+
+            <form onSubmit={handleRegisterSubmit} className="space-y-4">
+              <div>
+                <Label>Salon Ka Naam *</Label>
+                <Input name="name" placeholder="jaise: Glamour Beauty Studio" required />
+              </div>
+              <div>
+                <Label>Owner Ka Naam *</Label>
+                <Input name="ownerName" placeholder="jaise: Priya Sharma" required />
+              </div>
+              <div>
+                <Label>Phone Number *</Label>
+                <Input name="phone" type="tel" placeholder="9876543210" required />
+              </div>
+              <div>
+                <Label>Pata (Address) *</Label>
+                <Input name="address" placeholder="jaise: Connaught Place, New Delhi" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Kholne Ka Waqt *</Label>
+                  <Input type="time" name="openTime" defaultValue="09:00" required />
+                </div>
+                <div>
+                  <Label>Band Karne Ka Waqt *</Label>
+                  <Input type="time" name="closeTime" defaultValue="20:00" required />
+                </div>
+              </div>
+
+              <div>
+                <Label>Dashboard PIN (4 numbers) *</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    type={showRegisterPin ? "text" : "password"}
+                    value={registerPin}
+                    onChange={e => {
+                      setRegisterPin(e.target.value.replace(/\D/g, "").slice(0, 4));
+                      setRegisterError("");
+                    }}
+                    placeholder="••••"
+                    className="pl-10 pr-10 text-center text-2xl tracking-widest font-bold"
+                    maxLength={4}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegisterPin(v => !v)}
+                    className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground"
+                  >
+                    {showRegisterPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  ⚠️ Yeh PIN yaad rakhein — isi se aap apna dashboard kholenge.
+                </p>
+                {registerError && (
+                  <p className="text-destructive text-sm mt-1">⚠️ {registerError}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full gap-2 mt-2"
+                disabled={createSalon.isPending || registerPin.length !== 4}
+              >
+                <UserPlus className="w-4 h-4" />
+                {createSalon.isPending ? "Register ho raha hai..." : "Register Karein & Dashboard Kholein"}
+              </Button>
+            </form>
           </div>
         )}
       </div>
-
-      {/* PIN Login Modal */}
-      <Modal isOpen={!!pinModalSalon} onClose={() => setPinModalSalon(null)} title={`Login: ${pinModalSalon?.name}`}>
-        <form onSubmit={handlePinLogin} className="space-y-5">
-          <p className="text-muted-foreground text-sm">
-            Apna 4-digit PIN daalen jo aapne register karte waqt set kiya tha.
-          </p>
-          <div>
-            <Label>4-Digit PIN</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
-              <Input
-                type={showPin ? "text" : "password"}
-                value={pin}
-                onChange={e => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                  setPin(val);
-                  setLoginError("");
-                }}
-                placeholder="••••"
-                className="pl-10 pr-10 text-center text-2xl tracking-widest font-bold"
-                maxLength={4}
-                autoFocus
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPin(v => !v)}
-                className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {loginError && (
-              <p className="text-destructive text-sm mt-2 flex items-center gap-1">
-                ⚠️ {loginError}
-              </p>
-            )}
-          </div>
-          <div className="pt-4 border-t border-border/50 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => setPinModalSalon(null)}>Ruk Jao</Button>
-            <Button type="submit" disabled={pin.length !== 4 || salonLogin.isPending}>
-              {salonLogin.isPending ? "Verify ho raha hai..." : "Login Karein"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Register New Salon Modal */}
-      <Modal isOpen={isRegisterOpen} onClose={() => setIsRegisterOpen(false)} title="Naya Salon Register Karein">
-        <form onSubmit={handleRegister} className="space-y-5">
-          <div className="space-y-4">
-            <div>
-              <Label>Salon Ka Naam</Label>
-              <Input name="name" placeholder="jaise: Glamour Beauty Studio" required />
-            </div>
-            <div>
-              <Label>Owner Ka Naam</Label>
-              <Input name="ownerName" placeholder="jaise: Priya Sharma" required />
-            </div>
-            <div>
-              <Label>Phone Number</Label>
-              <Input name="phone" placeholder="9876543210" required />
-            </div>
-            <div>
-              <Label>Pata (Address)</Label>
-              <Input name="address" placeholder="jaise: Connaught Place, New Delhi" required />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Kholne Ka Waqt</Label>
-                <Input type="time" name="openTime" defaultValue="09:00" required />
-              </div>
-              <div>
-                <Label>Band Karne Ka Waqt</Label>
-                <Input type="time" name="closeTime" defaultValue="20:00" required />
-              </div>
-            </div>
-            <div>
-              <Label>Dashboard PIN (sirf 4 numbers)</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3.5 w-5 h-5 text-muted-foreground" />
-                <Input
-                  type={showRegisterPin ? "text" : "password"}
-                  name="pin"
-                  value={registerPin}
-                  onChange={e => setRegisterPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="••••"
-                  className="pl-10 pr-10 text-center text-2xl tracking-widest font-bold"
-                  maxLength={4}
-                  required
-                  pattern="\d{4}"
-                  title="Sirf 4 numbers daalen"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRegisterPin(v => !v)}
-                  className="absolute right-3 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showRegisterPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Yeh PIN yaad rakhein — isi se aap apna dashboard khol payenge.</p>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-border/50 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={() => setIsRegisterOpen(false)}>Ruk Jao</Button>
-            <Button type="submit" disabled={createSalon.isPending || registerPin.length !== 4}>
-              {createSalon.isPending ? "Register ho raha hai..." : "Register Karein"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </Layout>
   );
 }
