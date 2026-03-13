@@ -56,7 +56,13 @@ router.post("/bookings", async (req, res) => {
   }
 
   const [booking] = await db.insert(bookingsTable).values({
-    ...input,
+    salonId: input.salonId,
+    serviceId: input.serviceId,
+    clientName: input.clientName,
+    clientPhone: input.clientPhone,
+    date: input.date,
+    time: input.time,
+    notes: input.notes,
     status: "pending",
   }).returning();
 

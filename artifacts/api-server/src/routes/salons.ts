@@ -30,7 +30,15 @@ router.get("/salons", async (_req, res) => {
 
 router.post("/salons", async (req, res) => {
   const input = CreateSalonBody.parse(req.body);
-  const [salon] = await db.insert(salonsTable).values(input).returning();
+  const [salon] = await db.insert(salonsTable).values({
+    name: input.name,
+    ownerName: input.ownerName,
+    phone: input.phone,
+    address: input.address,
+    openTime: input.openTime,
+    closeTime: input.closeTime,
+    pin: input.pin,
+  }).returning();
   res.status(201).json(formatSalon(salon));
 });
 
@@ -73,7 +81,9 @@ router.post("/salons/:salonId/services", async (req, res) => {
   const { salonId } = CreateServiceParams.parse({ salonId: Number(req.params.salonId) });
   const input = CreateServiceBody.parse(req.body);
   const [service] = await db.insert(servicesTable).values({
-    ...input,
+    name: input.name,
+    description: input.description,
+    durationMinutes: input.durationMinutes,
     salonId,
     price: String(input.price),
   }).returning();
