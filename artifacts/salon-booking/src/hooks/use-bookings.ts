@@ -11,18 +11,18 @@ import {
 } from "@workspace/api-client-react";
 
 export function useBookings(salonId?: number, date?: string) {
-  return useGetBookings({ salonId, date }, { query: { enabled: !!salonId } });
+  return useGetBookings({ salonId, date }, { query: { queryKey: getGetBookingsQueryKey({ salonId, date }), enabled: !!salonId } });
 }
 
 export function useBooking(id: number) {
-  return useGetBooking(id, { query: { enabled: !!id } });
+  return useGetBooking(id, { query: { queryKey: getGetBookingQueryKey(id), enabled: !!id } });
 }
 
 export function useAvailableSlots(salonId: number, date: string, serviceId?: number) {
   return useGetAvailableSlots(
     salonId, 
     { date, serviceId }, 
-    { query: { enabled: !!salonId && !!date } }
+    { query: { queryKey: getGetAvailableSlotsQueryKey(salonId, { date, serviceId }), enabled: !!salonId && !!date } }
   );
 }
 

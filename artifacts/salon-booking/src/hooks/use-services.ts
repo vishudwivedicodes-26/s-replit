@@ -6,7 +6,7 @@ import {
 } from "@workspace/api-client-react";
 
 export function useServices(salonId: number) {
-  return useGetSalonServices(salonId, { query: { enabled: !!salonId } });
+  return useGetSalonServices(salonId, { query: { queryKey: getGetSalonServicesQueryKey(salonId), enabled: !!salonId } });
 }
 
 export function useCreateService(salonId: number) {

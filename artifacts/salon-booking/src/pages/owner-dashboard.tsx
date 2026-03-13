@@ -139,10 +139,10 @@ export default function OwnerDashboard() {
           <p className="text-muted-foreground">{salon.name}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => setIsQrOpen(true)}>
+          <Button variant="outline" className="gap-2" onClick={() => setIsQrOpen(true)}>
             <QrCode className="w-4 h-4" /> QR Code
           </Button>
-          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-destructive" onClick={handleLogout}>
+          <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-destructive" onClick={handleLogout}>
             <LogOut className="w-4 h-4" /> Logout
           </Button>
         </div>
@@ -179,7 +179,7 @@ export default function OwnerDashboard() {
             Clients scan karein → seedha booking page pe aa jayenge
           </p>
         </div>
-        <Button variant="outline" size="sm" className="shrink-0">Dekhein</Button>
+        <Button variant="outline" className="shrink-0">Dekhein</Button>
       </div>
 
       {/* Tabs */}
@@ -566,8 +566,8 @@ function BookingCard({
   return (
     <Card
       className="border-l-4 border-l-primary overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={onSelect}
     >
+      <div onClick={onSelect}>
       {/* Service + Status */}
       <div className="px-5 pt-5 pb-3 flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -651,6 +651,7 @@ function BookingCard({
         >
           <XCircle className="w-4 h-4" /> Cancel
         </Button>
+      </div>
       </div>
     </Card>
   );

@@ -38,11 +38,11 @@ export function isAuthorizedForSalon(salonId: number): boolean {
 }
 
 export function useSalons() {
-  return useGetSalons();
+  return useGetSalons({ query: { queryKey: getGetSalonsQueryKey() } });
 }
 
 export function useSalon(id: number) {
-  return useGetSalon(id, { query: { enabled: !!id } });
+  return useGetSalon(id, { query: { queryKey: ["salon", id], enabled: !!id } });
 }
 
 export function useCreateSalon() {
