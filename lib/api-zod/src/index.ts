@@ -1,3 +1,14 @@
 export * from "./generated/api";
-export * from "./generated/types";
-export { GetAvailableSlotsParams } from "./generated/api";
+export type { Salon } from "./generated/types/salon";
+export type { Service } from "./generated/types/service";
+export type { Booking } from "./generated/types/booking";
+export type { CreateSalonInput } from "./generated/types/createSalonInput";
+export type { CreateServiceInput } from "./generated/types/createServiceInput";
+export type { CreateBookingInput } from "./generated/types/createBookingInput";
+export type { ErrorResponse } from "./generated/types/errorResponse";
+export type { GetAvailableSlotsParams as GetAvailableSlotsType } from "./generated/types/getAvailableSlotsParams";
+export type { GetBookingsParams } from "./generated/types/getBookingsParams";
+export type { HealthStatus } from "./generated/types/healthStatus";
+export type { SalonLoginInput } from "./generated/types/salonLoginInput";
+export type { TimeSlot } from "./generated/types/timeSlot";
+export type { UpdateBookingStatusInput } from "./generated/types/updateBookingStatusInput";
